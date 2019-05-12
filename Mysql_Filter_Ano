@@ -1,0 +1,83 @@
+IF (SELECT 'batata') THEN ... é sempre falso
+ O SELECT, aparentemente, tem que retornar um booleano ou inteiro (0 pra falso, qualquer outra coisa pra verdadeiro)
+ O MySQL tenta converter string pra inteiro/booleano YOLO geral
+ 'abc' e '0abc' são falsos
+ '1abc' é verdadeiro
+ Tenta    if(select COUNT(*) from clientes_usuarios where email COLLATE utf8_unicode_ci = @email)
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+CREATE DEFINER=`xxxxxxx`@`xxxxxxxxx` PROCEDURE `sp_loginCliente`(in pEmail varchar(90))
+BEGIN
+
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION, SQLWARNING
+	BEGIN
+    select 'Ocorreu um erro!!'
+		ROLLBACK;
+	END;
+    set @email = pEmail;
+    START TRANSACTION;
+    if(select COUNT(*) from clientes_usuarios where email COLLATE utf8_unicode_ci = @email)
+    then
+		select * from clientes_usuarios where email COLLATE utf8_unicode_ci = @email;
+    else
+		select 'teste';
+    end if;
+END
+
+
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++
+recuperar ultimo ano
+
+
+
+
+select * from siconv_raquel.empresa where cnpj='xxxx' order by cnpj;
+
+select 
+	max(tb.anoAprovacao),
+    tb.cnpj,
+    tb.idModalidade 
+from
+	(select cnpj, anoAprovacao, idModalidade from siconv_raquel.empresa) as tb 
+group by 
+	cnpj, idModalidade;
+
+
+select distinct
+	t1.anoAprovacao, 
+    t1.cnpj, 
+    t1.idModalidade 
+from  
+	siconv_raquel.empresa t1 
+inner join (select max(anoAprovacao) as ano, cnpj from siconv_raquel.empresa group by cnpj) tb 
+	on (t1.anoAprovacao = tb.ano
+		and t1.cnpj = tb.cnpj);
+-- where
+--	t1.cnpj = 'xxxx';
+-- group by t1.cnpj, t1.idModalidade;
+
+
+
+select * from siconv_raquel.empresa where cnpj = 'xxxxx';
+
+
+-- xxx
+select * from empresa as emp
+	inner join siconv_raquel.empresa as p on emp.cnpj = p.cnpj
+
+
+++++++++++++++++++++++++++++++++++++++
+
+update empresa as t1, (select distinct
+	t1.anoAprovacao, 
+    t1.cnpj, 
+    t1.idModalidade 
+from  
+	siconv_raquel.empresa t1 
+inner join (select max(anoAprovacao) as ano, cnpj from siconv_raquel.empresa group by cnpj) tb 
+	on (t1.anoAprovacao = tb.ano
+		and t1.cnpj = tb.cnpj)) t2
+	set t1.idModalidade = t2.idModalidade where t1.cnpj = t2.cnpj;
