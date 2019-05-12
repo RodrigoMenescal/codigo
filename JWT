@@ -1,0 +1,42 @@
+var express = require('express'); var cors = require('cors'); var bodyParser = require('body-parser'); var mysql = require('mysql'); var jwt = require('jsonwebtoken');
+
+const JWT_PASSWORD = 'super_secret';
+
+// decodificar token // var decoded = jwt.verify(token, 'super_secret'); // console.log(decoded);
+
+var app = express(); app.use(cors()); app.use(bodyParser.json());
+
+// connection var pool = mysql.createConnection({ host: 'XXXXXXXXXXXXX', user: 'XXXXXXXXXX', password: 'XXXXXXXXXX', database: 'XXXXXXX' });
+
+pool.connect(function (err) { if (!err) { console.log("Conexao com banco..."); } else { console.log("Erro ao conectar banco..."); } });
+
+app.post('/login', function (req, res) { var lComando = ''; lComando = 'call sp_loginCliente(?,md5(?))' pool.query(lComando, [req.body.username, req.body.password], function (error, rows, filds) {
+
+    if (error) throw error;
+    var results = [];
+
+
+    results = JSON.stringify(rows[0]);
+    var rowsJSON = JSON.parse(results)
+
+    if (rowsJSON[0].error == "error") {
+        console.log('resultado: ', rowsJSON[0].error);
+        res.status(401).json({error: 'Usuario ou senha invalido'});
+    }else{
+        console.log('resultado: ', rowsJSON[0]);
+        res.json({token: jwt.sign({ username: req.body.username }, JWT_PASSWORD)});
+    }
+
+
+});
+pool.end();
+})
+
+app.get('/session', function(req, res){ var auth = req.headers.authorization; if(!auth || !auth.startsWith('Bearer')){ return res.status(401).json({error: 'Faltou JWT da sessao'}) }else{ auth = auth.split('Bearer').pop().trim(); } // console.log(auth) jwt.verify(auth, JWT_PASSWORD, (err, data) => { if(err){ res.status(401).json({error: 'sessao invalida'}) } res.send('Olá ')
+
+})
+})
+
+/+++++++++++++++++++++++++++++++++++++ SERVIDO +++++++++++++++++++++++++++++++/
+
+app.listen(8088, function () { console.log('servido rodadando http://localhost:8088'); });
